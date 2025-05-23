@@ -1,11 +1,15 @@
 
-import React, { useState } from 'react';
-import { Shield, Mail, AlertTriangle, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Shield, Mail, AlertTriangle, CheckCircle, LogOut, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import PhishingAnalyzer from '@/components/PhishingAnalyzer';
 import ResultDisplay from '@/components/ResultDisplay';
 import SafetyTips from '@/components/SafetyTips';
@@ -17,6 +21,10 @@ interface AnalysisResult {
 }
 
 const Index = () => {
+  const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
   const [formData, setFormData] = useState({
     senderEmail: '',
     subject: '',
@@ -28,8 +36,47 @@ const Index = () => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const savePhishingCheck = async (analysisResult: AnalysisResult) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('phishing_checks')
+        .insert({
+          user_id: user.id,
+          email_from: formData.senderEmail,
+          email_subject: formData.subject,
+          email_body: formData.message,
+          links_found: formData.links || null,
+          analysis_result: analysisResult.isSafe ? 'Safe' : 'Possibly Phishing',
+          reasoning: analysisResult.explanation
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Analysis Saved",
+        description: "Your email analysis has been saved to your history.",
+      });
+    } catch (error: any) {
+      console.error('Error saving phishing check:', error);
+      toast({
+        variant: "destructive",
+        title: "Save Error",
+        description: "Failed to save analysis to your history.",
+      });
+    }
   };
 
   const handleAnalyze = async () => {
@@ -42,6 +89,9 @@ const Index = () => {
     const analysisResult = PhishingAnalyzer.analyze(formData);
     setResult(analysisResult);
     setIsAnalyzing(false);
+
+    // Save to database
+    await savePhishingCheck(analysisResult);
   };
 
   const resetForm = () => {
@@ -55,14 +105,51 @@ const Index = () => {
     setResult(null);
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
+        {/* Header with User Info */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <Shield className="h-12 w-12 text-blue-600 mr-3" />
-            <h1 className="text-4xl font-bold text-gray-800">PhishShield</h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <Shield className="h-12 w-12 text-blue-600 mr-3" />
+              <h1 className="text-4xl font-bold text-gray-800">PhishShield</h1>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center text-gray-600">
+                <User className="h-4 w-4 mr-2" />
+                <span>{user.email}</span>
+              </div>
+              <Button
+                onClick={handleSignOut}
+                variant="outline"
+                size="sm"
+                className="flex items-center"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           </div>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Protect yourself from phishing emails. Enter email details below to check for suspicious content.
