@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Shield, Mail, AlertTriangle, CheckCircle, LogOut, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import ResultDisplay from '@/components/ResultDisplay';
 import SafetyTips from '@/components/SafetyTips';
+import ForwardedEmails from '@/components/ForwardedEmails';
 
 interface AnalysisResult {
   isSafe: boolean;
@@ -315,6 +315,11 @@ const Index = () => {
             {/* Safety Tips */}
             <SafetyTips />
           </div>
+        </div>
+
+        {/* Forwarded Emails Section */}
+        <div className="max-w-4xl mx-auto mt-8">
+          <ForwardedEmails />
         </div>
       </div>
     </div>

@@ -20,3 +20,6 @@ enable_signup = true
 
 [functions.analyze-phishing]
 verify_jwt = true
+
+[functions.process-forwarded-email]
+verify_jwt = false
