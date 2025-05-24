@@ -9,13 +9,12 @@ import { useToast } from '@/hooks/use-toast';
 
 interface ForwardedEmail {
   id: string;
-  sender_email: string;
-  subject: string;
+  email_from: string;
+  email_subject: string;
   email_body: string;
   analysis_result: string;
   reasoning: string;
-  confidence: number;
-  processed_at: string;
+  created_at: string;
 }
 
 const ForwardedEmails: React.FC = () => {
@@ -30,9 +29,9 @@ const ForwardedEmails: React.FC = () => {
   const fetchForwardedEmails = async () => {
     try {
       const { data, error } = await supabase
-        .from('forwarded_email_checks')
+        .from('phishing_checks')
         .select('*')
-        .order('processed_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(10);
 
       if (error) throw error;
@@ -42,7 +41,7 @@ const ForwardedEmails: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load forwarded email analyses.",
+        description: "Failed to load email analyses.",
       });
     } finally {
       setLoading(false);
@@ -55,7 +54,7 @@ const ForwardedEmails: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Mail className="h-5 w-5 mr-2" />
-            Recent Forwarded Emails
+            Recent Email Analyses
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -73,7 +72,7 @@ const ForwardedEmails: React.FC = () => {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
             <Mail className="h-5 w-5 mr-2" />
-            Recent Forwarded Emails
+            Recent Email Analyses
           </div>
           <Button onClick={fetchForwardedEmails} variant="outline" size="sm">
             Refresh
@@ -84,9 +83,9 @@ const ForwardedEmails: React.FC = () => {
         {forwardedEmails.length === 0 ? (
           <div className="text-center p-6 text-gray-500">
             <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No forwarded emails yet.</p>
+            <p>No email analyses yet.</p>
             <p className="text-sm mt-2">
-              Forward suspicious emails to <strong>phishshieldapp@gmail.com</strong> to analyze them automatically.
+              Use the form above to analyze suspicious emails.
             </p>
           </div>
         ) : (
@@ -107,16 +106,13 @@ const ForwardedEmails: React.FC = () => {
                       >
                         {email.analysis_result}
                       </Badge>
-                      <span className="text-xs text-gray-500">
-                        {email.confidence}% confidence
-                      </span>
                     </div>
-                    <h4 className="font-medium truncate">{email.subject}</h4>
-                    <p className="text-sm text-gray-600 truncate">From: {email.sender_email}</p>
+                    <h4 className="font-medium truncate">{email.email_subject}</h4>
+                    <p className="text-sm text-gray-600 truncate">From: {email.email_from}</p>
                   </div>
                   <div className="flex items-center text-xs text-gray-500 ml-4">
                     <Clock className="h-3 w-3 mr-1" />
-                    {new Date(email.processed_at).toLocaleDateString()}
+                    {new Date(email.created_at).toLocaleDateString()}
                   </div>
                 </div>
                 <p className="text-sm text-gray-700 mt-2">{email.reasoning}</p>
