@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import ResultDisplay from '@/components/ResultDisplay';
 import SafetyTips from '@/components/SafetyTips';
-import ForwardedEmails from '@/components/ForwardedEmails';
+import PersonalizedSafetyTips from '@/components/PersonalizedSafetyTips';
 
 interface AnalysisResult {
   isSafe: boolean;
@@ -312,14 +312,9 @@ const Index = () => {
             {/* Result Display */}
             {result && <ResultDisplay result={result} />}
             
-            {/* Safety Tips */}
-            <SafetyTips />
+            {/* Personalized Safety Tips */}
+            <PersonalizedSafetyTips />
           </div>
-        </div>
-
-        {/* Forwarded Emails Section */}
-        <div className="max-w-4xl mx-auto mt-8">
-          <ForwardedEmails />
         </div>
       </div>
     </div>
