@@ -1,1 +1,22 @@
+
 project_id = "dxgogtenniyzjfzcwodn"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54320
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://dxgogtenniyzjfzcwodn.supabase.co"]
+jwt_expiry = 3600
+refresh_token_rotation_enabled = true
+secure_password_change_enabled = true
+enable_signup = true
+
+[functions.analyze-phishing]
+verify_jwt = true

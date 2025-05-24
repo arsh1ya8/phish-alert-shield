@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import PhishingAnalyzer from '@/components/PhishingAnalyzer';
 import ResultDisplay from '@/components/ResultDisplay';
 import SafetyTips from '@/components/SafetyTips';
 
@@ -83,15 +82,59 @@ const Index = () => {
     setIsAnalyzing(true);
     setResult(null);
     
-    // Simulate analysis delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const analysisResult = PhishingAnalyzer.analyze(formData);
-    setResult(analysisResult);
-    setIsAnalyzing(false);
+    try {
+      console.log('Calling AI analysis...');
+      
+      const { data: analysisResult, error } = await supabase.functions.invoke('analyze-phishing', {
+        body: {
+          senderEmail: formData.senderEmail,
+          subject: formData.subject,
+          message: formData.message,
+          links: formData.links,
+          attachments: formData.attachments
+        }
+      });
 
-    // Save to database
-    await savePhishingCheck(analysisResult);
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to analyze email');
+      }
+
+      if (!analysisResult) {
+        throw new Error('No analysis result received');
+      }
+
+      console.log('Analysis result:', analysisResult);
+      
+      setResult(analysisResult);
+      
+      // Save to database
+      await savePhishingCheck(analysisResult);
+
+    } catch (error: any) {
+      console.error('Analysis error:', error);
+      
+      // Show fallback result if API key is missing or other error
+      const fallbackResult: AnalysisResult = {
+        isSafe: false,
+        explanation: error.message.includes('API key') 
+          ? "AI analysis unavailable - API key not configured. Please review manually for safety."
+          : "Analysis failed. Please review the email manually for safety.",
+        confidence: 60
+      };
+      
+      setResult(fallbackResult);
+      
+      toast({
+        variant: "destructive",
+        title: "Analysis Error",
+        description: error.message.includes('API key') 
+          ? "AI analysis unavailable - please contact admin"
+          : "Failed to analyze email",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const resetForm = () => {
@@ -152,7 +195,7 @@ const Index = () => {
             </div>
           </div>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Protect yourself from phishing emails. Enter email details below to check for suspicious content.
+            AI-powered phishing detection. Enter email details below for intelligent analysis.
           </p>
         </div>
 
@@ -163,7 +206,7 @@ const Index = () => {
               <CardHeader>
                 <CardTitle className="flex items-center text-2xl">
                   <Mail className="h-6 w-6 mr-2 text-blue-600" />
-                  Email Analysis
+                  AI Email Analysis
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -242,7 +285,7 @@ const Index = () => {
                     {isAnalyzing ? (
                       <>
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        Analyzing...
+                        AI Analyzing...
                       </>
                     ) : (
                       <>
